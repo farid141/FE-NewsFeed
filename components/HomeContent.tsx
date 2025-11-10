@@ -2,7 +2,7 @@
 
 import { formatTime } from "@/helper";
 import { User, UserMinus, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "./Axios/AxiosInstance";
 
 type User = {
@@ -19,6 +19,8 @@ type Post = {
   createdat: string;
 };
 
+const POSTS_PER_PAGE = 10
+
 export default function HomeContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [hasMoreUser, setHasMoreUser] = useState<boolean>();
@@ -26,15 +28,26 @@ export default function HomeContent() {
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState<string>();
   const [error, setError] = useState("");
-  const [hasMorePost, setHasMorePost] = useState<boolean>();
 
-  const fetchFeed = async () => {
+  const [postPage, setPostPage] = useState<number>(1);
+  const [hasMorePost, setHasMorePost] = useState<boolean>();
+  const [isLoading, setIsLoading] = useState<boolean>();
+  
+  // Ref untuk Intersection Observer
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const fetchFeed = async (scrolled: boolean=false) => {
     try {
       const res = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/api/feed",
+        process.env.NEXT_PUBLIC_API_URL + `/api/feed?page=${postPage}&limit=${POSTS_PER_PAGE}`,
         { withCredentials: true }
       );
-      setDisplayedPosts(res.data.data);
+
+      if(scrolled)
+        setDisplayedPosts((prev)=> [...prev, ...res.data.data])
+      else
+        setDisplayedPosts(res.data.data);
+      
       setHasMorePost(res.data.pagination.hasMore);
     } catch {
       setDisplayedPosts([]);
@@ -58,6 +71,11 @@ export default function HomeContent() {
     fetchFeed();
     fetchUsers();
   }, []);
+
+  // infinite scroll trigger
+  useEffect(() => {
+    fetchFeed(true);
+  }, [postPage]);
 
   const handleFollow = async (userId: number, follow: boolean) => {
     try {
@@ -92,6 +110,34 @@ export default function HomeContent() {
       setError(error.response?.data?.error);
     }
   };
+
+  const lastPostCallback = useCallback((node: HTMLDivElement | null) => {
+    // Cleanup observer sebelumnya
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Skip jika sedang loading
+    if (isLoading) return;
+
+    // Buat observer baru
+    observerRef.current = new IntersectionObserver((entries) => {
+      // entries[0] adalah element yang kita observe
+      if (entries[0].isIntersecting && hasMorePost) {
+        console.log('User reached last post, loading more...');
+        setPostPage((prevPage) => prevPage + 1);
+      }
+    }, {
+      // Options untuk fine-tuning
+      threshold: 1.0,      // 100% element harus visible
+      rootMargin: '100px'  // Trigger 100px sebelum element visible
+    });
+
+    // Attach observer ke node (last post element)
+    if (node) {
+      observerRef.current.observe(node);
+    }
+  }, [isLoading, hasMorePost]);
 
   return (
     <>
@@ -172,15 +218,20 @@ export default function HomeContent() {
 
         {/* Posts Feed */}
         <div className="space-y-4">
-          {displayedPosts.map((post, index) => (
+          {displayedPosts.map((post, index) => {
+            
+            // Attach ref ke post terakhir
+            const isLastPost = index === displayedPosts.length - 1;
+
+            return (
             <div
               key={post.id}
-              //   ref={index === displayedPosts.length - 1 ? lastPostRef : null}
+              ref={isLastPost ? lastPostCallback : null}
               className="bg-white rounded-xl shadow-sm p-6"
             >
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
-                  {post.userid}
+                  {index}={post.userid}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -195,11 +246,17 @@ export default function HomeContent() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
 
           {!hasMorePost && displayedPosts.length > 0 && (
             <div className="text-center py-8 text-gray-500">
               No more posts to load
+            </div>
+          )}
+
+          {hasMorePost && isLoading && (
+            <div className="text-center py-8 text-gray-500">
+              Loading ...
             </div>
           )}
 
