@@ -1,7 +1,9 @@
 "use client";
 
+import axios from "@/components/Axios/AxiosInstance";
 import { useAuth } from "@/contexts/AuthContexts";
 import { LogOut, MessageSquare, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function layout({
   children,
@@ -9,6 +11,19 @@ export default function layout({
   children: React.ReactNode
 }){
   const { user } = useAuth();
+  const router = useRouter();
+
+  const onLogout = async()=>{
+    try {
+      await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/logout",
+        {},
+        { withCredentials: true }
+      );
+      router.push('/');
+    } catch {
+    }
+  }
 
   return (
     <>
@@ -25,7 +40,7 @@ export default function layout({
               <span className="font-medium">{user?.name}</span>
             </div>
             <button
-            //   onClick={onLogout}
+              onClick={onLogout}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
             >
               <LogOut className="w-4 h-4" />
