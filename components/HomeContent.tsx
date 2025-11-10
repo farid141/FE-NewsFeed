@@ -25,6 +25,7 @@ export default function HomeContent() {
 
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState<string>();
+  const [error, setError] = useState("");
   const [hasMorePost, setHasMorePost] = useState<boolean>();
 
   const fetchFeed = async () => {
@@ -73,12 +74,24 @@ export default function HomeContent() {
 
       fetchFeed();
       fetchUsers();
-    } catch {
-      setUsers([]);
-    }
+    } catch {}
   };
 
-  const handleCreatePost = async () => {};
+  const handleCreatePost = async () => {
+    try {
+      await axios.post(
+        process.env.NEXT_PUBLIC_API_URL + "/api/posts",
+        { content: newPost },
+        { withCredentials: true }
+      );
+
+      fetchFeed();
+      setNewPost("");
+    } catch (error: any) {
+      console.log(error);
+      setError(error.response?.data?.error);
+    }
+  };
 
   return (
     <>
@@ -143,6 +156,11 @@ export default function HomeContent() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               rows={3}
             />
+            {error && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <button
               onClick={handleCreatePost}
               className="mt-3 w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
