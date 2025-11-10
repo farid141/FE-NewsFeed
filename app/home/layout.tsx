@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContexts";
 import { LogOut, MessageSquare, User } from "lucide-react";
 
 export default function layout({
@@ -7,6 +8,8 @@ export default function layout({
 }: {
   children: React.ReactNode
 }){
+  const { user } = useAuth();
+
   return (
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -19,7 +22,7 @@ export default function layout({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-gray-700">
               <User className="w-5 h-5" />
-              <span className="font-medium">{'test'}</span>
+              <span className="font-medium">{user?.name}</span>
             </div>
             <button
             //   onClick={onLogout}

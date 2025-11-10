@@ -3,8 +3,11 @@
 import { useState } from "react";
 
 import { useRouter } from "next/navigation";
+import axios from "./Axios/AxiosInstance";
+import { useAuth } from "@/contexts/AuthContexts";
 
 export default function _loginForm() {
+  const {setUser} = useAuth();
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const router = useRouter();  
 
@@ -12,7 +15,7 @@ export default function _loginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     setError('');
 
     if (!username || !password) {
@@ -20,7 +23,23 @@ export default function _loginForm() {
       return;
     }
 
-    router.push('/home');
+    try{
+      await axios.post(
+        process.env.NEXT_PUBLIC_API_URL+'/api/login',
+        {
+          username,
+          password
+        },
+        {withCredentials: true}
+      )
+      router.push('/home');
+      setUser({name: username});
+
+    }catch (error: any) {
+      console.log(error)
+      setError(error.response?.data?.error)
+    }
+
   };
 
   return (
