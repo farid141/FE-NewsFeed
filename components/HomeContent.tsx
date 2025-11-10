@@ -1,15 +1,9 @@
 "use client";
 
 import { formatTime } from "@/helper";
-import {
-  Heart,
-  LogOut,
-  MessageSquare,
-  User,
-  UserMinus,
-  UserPlus,
-} from "lucide-react";
-import { useState } from "react";
+import { User, UserMinus, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "./Axios/AxiosInstance";
 
 type User = {
   id: number;
@@ -20,21 +14,75 @@ type User = {
 type Post = {
   id: number;
   username: string;
+  userid: number;
   content: string;
   createdat: string;
 };
 
 export default function HomeContent() {
   const [users, setUsers] = useState<User[]>([]);
+  const [hasMoreUser, setHasMoreUser] = useState<boolean>();
+
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState<string>();
-  const [hasMore, setHasMore] = useState<string>();
+  const [hasMorePost, setHasMorePost] = useState<boolean>();
 
-  const handleFollow = async (userId: number) => {};
+  const fetchFeed = async () => {
+    try {
+      const res = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/feed",
+        { withCredentials: true }
+      );
+      setDisplayedPosts(res.data.data);
+      setHasMorePost(res.data.pagination.hasMore);
+    } catch {
+      setDisplayedPosts([]);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/api/users",
+        { withCredentials: true }
+      );
+      setUsers(res.data.data);
+      setHasMoreUser(res.data.pagination.hasMore);
+    } catch {
+      setUsers([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+    fetchUsers();
+  }, []);
+
+  const handleFollow = async (userId: number, follow: boolean) => {
+    try {
+      follow
+        ? await axios.delete(
+            process.env.NEXT_PUBLIC_API_URL + "/api/follow/" + userId,
+            { withCredentials: true }
+          )
+        : await axios.post(
+            process.env.NEXT_PUBLIC_API_URL + "/api/follow/" + userId,
+            {},
+            { withCredentials: true }
+          );
+
+      fetchFeed();
+      fetchUsers();
+    } catch {
+      setUsers([]);
+    }
+  };
+
   const handleCreatePost = async () => {};
+
   return (
     <>
-      {/* Sidebar - Users to Follow */}
+      {/* list user follow */}
       <div className="lg:col-span-1">
         <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
           <h2 className="text-lg font-bold text-gray-800 mb-4">
@@ -56,17 +104,23 @@ export default function HomeContent() {
                     </span>
                   </div>
                   <button
-                    onClick={() => handleFollow(user.id)}
-                    className={`p-2 rounded-lg transition ${
+                    onClick={() => handleFollow(user.id, user.following)}
+                    className={`p-2 rounded-lg transition flex gap-3 align-center ${
                       user.following
                         ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                         : "bg-blue-600 text-white hover:bg-blue-700"
                     }`}
                   >
                     {user.following ? (
-                      <UserMinus className="w-4 h-4" />
+                      <>
+                        <UserMinus className="w-4 h-4" />
+                        Unfollow
+                      </>
                     ) : (
-                      <UserPlus className="w-4 h-4" />
+                      <>
+                        <UserPlus className="w-4 h-4" />
+                        Follow
+                      </>
                     )}
                   </button>
                 </div>
@@ -108,12 +162,12 @@ export default function HomeContent() {
             >
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-medium flex-shrink-0">
-                  {post.username[0].toUpperCase()}
+                  {post.userid}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-gray-800">
-                      {post.username}
+                      {post.userid}
                     </span>
                     <span className="text-gray-500 text-sm">
                       {formatTime(post.createdat)}
@@ -125,7 +179,7 @@ export default function HomeContent() {
             </div>
           ))}
 
-          {!hasMore && displayedPosts.length > 0 && (
+          {!hasMorePost && displayedPosts.length > 0 && (
             <div className="text-center py-8 text-gray-500">
               No more posts to load
             </div>
