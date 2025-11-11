@@ -25,16 +25,20 @@ export default function _loginForm() {
 
     try{
       await axios.post(
-        process.env.NEXT_PUBLIC_API_URL+'/api/login',
+        process.env.NEXT_PUBLIC_API_URL+`/api/${isLogin?'login':'register'}`,
         {
           username,
           password
         },
         {withCredentials: true}
       )
-      router.push('/home');
-      setUser({name: username});
-
+      if(isLogin){
+        router.push('/home');
+        setUser({name: username});
+      }else{
+        setUsername('');
+        setPassword('');
+      }
     }catch (error: any) {
       console.log(error)
       setError(error.response?.data?.error)
