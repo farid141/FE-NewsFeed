@@ -39,7 +39,7 @@ export default function HomeContent() {
   const fetchFeed = async (scrolled: boolean=false) => {
     try {
       const res = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + `/api/feed?page=${postPage}&limit=${POSTS_PER_PAGE}`,
+        process.env.NEXT_PUBLIC_API_URL + `/api/feed?page=${scrolled?postPage:1}&limit=${POSTS_PER_PAGE}`,
         { withCredentials: true }
       );
 
@@ -103,7 +103,7 @@ export default function HomeContent() {
         { withCredentials: true }
       );
 
-      fetchFeed();
+      await fetchFeed();
       setNewPost("");
     } catch (error: any) {
       console.log(error);
