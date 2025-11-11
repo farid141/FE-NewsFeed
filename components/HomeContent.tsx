@@ -90,8 +90,8 @@ export default function HomeContent() {
             { withCredentials: true }
           );
 
-      fetchFeed();
-      fetchUsers();
+      await fetchFeed();
+      await fetchUsers();
     } catch {}
   };
 
