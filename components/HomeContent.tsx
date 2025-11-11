@@ -32,6 +32,7 @@ export default function HomeContent() {
   const [postPage, setPostPage] = useState<number>(1);
   const [hasMorePost, setHasMorePost] = useState<boolean>();
   const [isLoading, setIsLoading] = useState<boolean>();
+  const [initialized, setInitialized] = useState(false);
   
   // Ref untuk Intersection Observer
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -67,14 +68,25 @@ export default function HomeContent() {
     }
   };
 
+  const initFetch = async()=>{
+    try {
+      await Promise.all([
+        fetchFeed(),
+        fetchUsers(),
+      ]);
+
+      setInitialized(true);
+    } catch (error) {
+    }
+  }
+
   useEffect(() => {
-    fetchFeed();
-    fetchUsers();
+    initFetch();
   }, []);
 
   // infinite scroll trigger
   useEffect(() => {
-    fetchFeed(true);
+    if(initialized) fetchFeed(true);
   }, [postPage]);
 
   const handleFollow = async (userId: number, follow: boolean) => {
