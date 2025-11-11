@@ -1,5 +1,6 @@
 "use client";
 import axios from "@/components/Axios/AxiosInstance";
+import { useRouter } from "next/navigation";
 import React, {
   createContext,
   useContext,
@@ -20,6 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
 
   const fetch = async()=>{
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     }catch {
       setUser(null);
+      router.push('/');
     }
   }
 
